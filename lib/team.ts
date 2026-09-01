@@ -10,7 +10,7 @@ export const LEADER: TeamMember = {
   name: "Cindy Kahn",
   role: "Chief Executive Officer",
   discipline: "Leadership",
-  image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=900&q=80&auto=format&fit=crop",
+  image: "/ceo.jpeg",
   bio: "Cindy Kahn is the Chief Executive Officer of OAKLEAF PARTNERS LLC, leading the company's vision and overseeing its consulting and design services. She built the firm around a single idea: that creativity and technical discipline belong in the same room.",
 }
 
@@ -51,10 +51,17 @@ export const TEAM: TeamMember[] = [
     bio: "Owns the path from concept to specification — patterns, fabrics, and tech packs ready for production.",
   },
   {
-    name: "James Okafor",
+    name: "Jessica Keller",
     role: "Senior Project Advisor, Engineering",
     discipline: "Engineering",
-    image: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=800&q=80&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=800&q=80&auto=format&fit=crop",
     bio: "Supports engineering project planning and advisory work, keeping scope, risk, and delivery aligned.",
+  },
+  {
+    name: "James Gunderson",
+    role: "Engineering Consultant",
+    discipline: "Engineering",
+    image: "/engineer.jpeg",
+    bio: "Provides technical consulting and guidance on engineering works, helping clients evaluate options and execute with confidence.",
   },
 ]
