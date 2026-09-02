@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Mail, MapPin, Linkedin, Instagram } from "lucide-react"
+import { Mail, MapPin, Phone, Linkedin, Instagram } from "lucide-react"
 import { LogoMark } from "@/components/logo"
 
 const nav = [
@@ -70,6 +70,14 @@ export function Footer() {
               <div className="flex items-center gap-3">
                 <Mail className="h-3.5 w-3.5 flex-shrink-0" style={{ color: "var(--primary)" }} />
                 <span className="text-xs" style={{ color: "var(--text-3)" }}>hello@oakleafpartners.com</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Phone className="h-3.5 w-3.5 flex-shrink-0" style={{ color: "var(--primary)" }} />
+                <span className="text-xs" style={{ color: "var(--text-3)" }}>+1 (469) 879-9826</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Phone className="h-3.5 w-3.5 flex-shrink-0" style={{ color: "var(--primary)" }} />
+                <span className="text-xs" style={{ color: "var(--text-3)" }}>+1 (405) 213-7499</span>
               </div>
               <div className="flex items-center gap-3">
                 <MapPin className="h-3.5 w-3.5 flex-shrink-0" style={{ color: "var(--primary)" }} />
