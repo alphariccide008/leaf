@@ -1,29 +1,31 @@
 "use client"
 
-/**
- * LocalStorage-backed admin auth.
- * Phase 1: credentials checked client-side. A real backend can replace
- * `verifyCredentials` and the token handling later without touching the UI.
- */
+import { apiGet, apiPost } from "@/lib/api"
 
-export const AUTH_KEY = "oak_admin_auth"
+/** Server-backed admin auth. The session lives in an httpOnly cookie. */
 
-const ADMIN_USER = "admin"
-const ADMIN_PASS = "oakleaf@2026"
-
-export function verifyCredentials(username: string, password: string): boolean {
-  return username.trim().toLowerCase() === ADMIN_USER && password === ADMIN_PASS
+export async function login(username: string, password: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await apiPost("/api/admin/login", { username, password })
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Login failed" }
+  }
 }
 
-export function login(): void {
-  localStorage.setItem(AUTH_KEY, "true")
+export async function logout(): Promise<void> {
+  try {
+    await apiPost("/api/admin/logout")
+  } catch {
+    /* ignore */
+  }
 }
 
-export function logout(): void {
-  localStorage.removeItem(AUTH_KEY)
-}
-
-export function isAuthed(): boolean {
-  if (typeof window === "undefined") return false
-  return localStorage.getItem(AUTH_KEY) === "true"
+export async function isAuthed(): Promise<boolean> {
+  try {
+    await apiGet("/api/admin/me")
+    return true
+  } catch {
+    return false
+  }
 }

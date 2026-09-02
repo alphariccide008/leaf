@@ -9,7 +9,7 @@ import {
   type Lead,
   type LeadStatus,
 } from "@/lib/leads-store"
-import { timeAgo } from "@/lib/utils"
+import { timeAgo, formatPrice } from "@/lib/utils"
 
 const STATUSES: LeadStatus[] = ["new", "contacted", "scheduled", "closed"]
 
@@ -27,26 +27,31 @@ export default function AdminLeads() {
   const [selected, setSelected] = useState<Lead | null>(null)
   const [delTarget, setDelTarget] = useState<Lead | null>(null)
 
-  const reload = () => setLeads(getLeads())
+  const reload = () => {
+    getLeads().then(setLeads).catch(() => {})
+  }
 
   useEffect(() => {
     reload()
-    const t = setInterval(reload, 3000)
+    const t = setInterval(reload, 4000)
     return () => clearInterval(t)
   }, [])
 
-  const setStatus = (id: number, status: LeadStatus) => {
-    updateLeadStatus(id, status)
-    reload()
+  const setStatus = async (id: number, status: LeadStatus) => {
+    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status } : l)))
     setSelected((s) => (s && s.id === id ? { ...s, status } : s))
+    await updateLeadStatus(id, status)
+    reload()
   }
 
-  const remove = () => {
+  const remove = async () => {
     if (!delTarget) return
-    deleteLead(delTarget.id)
-    reload()
+    const id = delTarget.id
     setDelTarget(null)
     setSelected(null)
+    setLeads((prev) => prev.filter((l) => l.id !== id))
+    await deleteLead(id)
+    reload()
   }
 
   const filtered = leads.filter((l) => {
@@ -114,7 +119,14 @@ export default function AdminLeads() {
                     <p className="text-sm font-semibold text-white/90">{l.name}</p>
                     <p className="text-[11px] text-white/30">{l.email}</p>
                   </td>
-                  <td className="px-5 py-4 text-xs text-white/45 whitespace-nowrap">{l.service}</td>
+                  <td className="px-5 py-4 text-xs text-white/45 whitespace-nowrap">
+                    {l.service}
+                    {!!l.paidAmount && l.paidAmount > 0 && (
+                      <span className="ml-2 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">
+                        {formatPrice(l.paidAmount)}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-5 py-4">
                     <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${statusColor[l.status]}`}>
                       {l.status}
@@ -173,6 +185,16 @@ export default function AdminLeads() {
               <p className="text-[10px] uppercase tracking-widest text-white/35 mb-2">Service</p>
               <p className="text-sm text-white/80">{selected.service}</p>
             </div>
+
+            {!!selected.paidAmount && selected.paidAmount > 0 && (
+              <div className="mb-8">
+                <p className="text-[10px] uppercase tracking-widest text-white/35 mb-2">Payment recorded</p>
+                <p className="text-sm font-semibold text-emerald-400">{formatPrice(selected.paidAmount)}</p>
+                <a href="/admin/payments" className="text-[11px] text-white/40 hover:text-white/70 transition-colors">
+                  Manage in Payments →
+                </a>
+              </div>
+            )}
 
             <div className="mb-8">
               <p className="text-[10px] uppercase tracking-widest text-white/35 mb-2">Message</p>

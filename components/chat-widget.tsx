@@ -3,21 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { usePathname } from "next/navigation"
 import { MessageCircle, X, Send, ChevronLeft, ArrowRight } from "lucide-react"
-import {
-  getOrCreateSession,
-  pushClientMessage,
-  pushAdminMessageToMine,
-  getMyMessages,
-  getMySessionId,
-  type ChatMsg,
-} from "@/lib/chat-store"
+import { startSession, pushClientMessage, getMyMessages, getMySessionId, type ChatMsg } from "@/lib/chat-store"
 
-const topics = [
-  "Wardrobe & Fashion Consulting",
-  "Clothing Design",
-  "Engineering Consulting",
-  "Something else",
-]
+const topics = ["Wardrobe & Fashion Consulting", "Clothing Design", "Engineering Consulting", "Something else"]
 
 export function ChatWidget() {
   const pathname = usePathname()
@@ -31,31 +19,38 @@ export function ChatWidget() {
   const [typing, setTyping] = useState(false)
   const [unread, setUnread] = useState(0)
   const [started, setStarted] = useState(false)
+  const [starting, setStarting] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const openRef = useRef(open)
+  openRef.current = open
 
-  const syncMessages = useCallback(() => {
-    const msgs = getMyMessages()
+  const syncMessages = useCallback(async () => {
+    const msgs = await getMyMessages()
     setMessages((prev) => {
       const prevAdmin = prev.filter((m) => m.role === "admin").length
       const nextAdmin = msgs.filter((m) => m.role === "admin").length
-      if (!open && nextAdmin > prevAdmin) setUnread((u) => u + (nextAdmin - prevAdmin))
+      if (!openRef.current && nextAdmin > prevAdmin) setUnread((u) => u + (nextAdmin - prevAdmin))
       return msgs
     })
-  }, [open])
+  }, [])
 
   useEffect(() => {
     // Resume an in-progress session on reload
-    if (getMySessionId() && getMyMessages().length > 0) {
-      setStarted(true)
-      setScreen("chat")
-      setMessages(getMyMessages())
+    if (getMySessionId()) {
+      getMyMessages().then((msgs) => {
+        if (msgs.length > 0) {
+          setStarted(true)
+          setScreen("chat")
+          setMessages(msgs)
+        }
+      })
     }
   }, [])
 
   useEffect(() => {
     if (!started) return
-    pollRef.current = setInterval(syncMessages, 1500)
+    pollRef.current = setInterval(syncMessages, 2500)
     return () => {
       if (pollRef.current) clearInterval(pollRef.current)
     }
@@ -72,31 +67,32 @@ export function ChatWidget() {
   // Hide widget entirely inside the admin area
   if (pathname?.startsWith("/admin")) return null
 
-  const startChat = () => {
-    if (!name.trim() || !email.trim()) return
-    getOrCreateSession(name.trim(), email.trim(), topic)
-    setStarted(true)
-    setScreen("chat")
-
-    setTimeout(() => {
-      setTyping(true)
-      setTimeout(() => {
-        setTyping(false)
-        pushAdminMessageToMine(
-          `Hi ${name.trim().split(" ")[0]} — welcome to OAKLEAF PARTNERS. Thanks for reaching out about ${topic.toLowerCase()}. How can we help?`,
-        )
-        syncMessages()
-      }, 1300)
-    }, 800)
+  const startChat = async () => {
+    if (!name.trim() || !email.trim() || starting) return
+    setStarting(true)
+    try {
+      const session = await startSession(name.trim(), email.trim(), topic)
+      setStarted(true)
+      setScreen("chat")
+      setMessages(session?.messages ?? [])
+    } catch {
+      /* surface nothing fancy — user can retry */
+    } finally {
+      setStarting(false)
+    }
   }
 
-  const send = (text = input.trim()) => {
+  const send = async (text = input.trim()) => {
     if (!text) return
-    pushClientMessage(text)
     setInput("")
-    syncMessages()
+    setMessages((prev) => [...prev, { role: "client", text, ts: Date.now() }])
     setTyping(true)
-    setTimeout(() => setTyping(false), 1800)
+    try {
+      const msgs = await pushClientMessage(text)
+      if (msgs.length) setMessages(msgs)
+    } finally {
+      setTimeout(() => setTyping(false), 600)
+    }
   }
 
   return (
@@ -186,11 +182,11 @@ export function ChatWidget() {
 
               <button
                 onClick={startChat}
-                disabled={!name.trim() || !email.trim()}
+                disabled={!name.trim() || !email.trim() || starting}
                 className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-40 hover:opacity-90"
                 style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
               >
-                Start Chat <ArrowRight className="h-4 w-4" />
+                {starting ? "Starting..." : "Start Chat"} <ArrowRight className="h-4 w-4" />
               </button>
             </div>
           </div>

@@ -13,8 +13,10 @@ export default function ShopPage() {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setProducts(getProducts())
-    setMounted(true)
+    getProducts()
+      .then(setProducts)
+      .catch(() => setProducts([]))
+      .finally(() => setMounted(true))
   }, [])
 
   const filtered = products.filter((p) => filter === "All" || p.category === filter)

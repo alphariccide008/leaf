@@ -9,11 +9,15 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    if (!isAuthed()) {
-      router.replace("/admin/login")
-      return
+    let active = true
+    isAuthed().then((ok) => {
+      if (!active) return
+      if (ok) setReady(true)
+      else router.replace("/admin/login")
+    })
+    return () => {
+      active = false
     }
-    setReady(true)
   }, [router])
 
   if (!ready) {

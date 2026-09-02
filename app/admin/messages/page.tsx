@@ -19,11 +19,13 @@ export default function AdminMessages() {
   const [view, setView] = useState<"list" | "chat">("list")
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  const sync = useCallback(() => setSessions(getSessions()), [])
+  const sync = useCallback(() => {
+    getSessions().then(setSessions).catch(() => {})
+  }, [])
 
   useEffect(() => {
     sync()
-    const t = setInterval(sync, 1500)
+    const t = setInterval(sync, 3000)
     return () => clearInterval(t)
   }, [sync])
 
@@ -31,26 +33,30 @@ export default function AdminMessages() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [selected, sessions])
 
-  const open = (id: string) => {
+  const open = async (id: string) => {
     setSelected(id)
     setView("chat")
-    markRead(id)
+    setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, read: true } : s)))
+    await markRead(id)
     sync()
   }
 
-  const send = () => {
+  const send = async () => {
     if (!reply.trim() || !selected) return
-    adminReply(selected, reply.trim())
+    const text = reply.trim()
     setReply("")
+    const updated = await adminReply(selected, text)
+    if (updated) setSessions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
     sync()
   }
 
-  const del = (id: string) => {
-    deleteSession(id)
+  const del = async (id: string) => {
     if (selected === id) {
       setSelected(null)
       setView("list")
     }
+    setSessions((prev) => prev.filter((s) => s.id !== id))
+    await deleteSession(id)
     sync()
   }
 

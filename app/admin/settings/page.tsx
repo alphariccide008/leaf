@@ -67,7 +67,9 @@ export default function AdminSettings() {
             <h2 className="font-display text-sm font-semibold text-white">Security</h2>
           </div>
           <p className="text-xs text-white/30 mb-4">
-            Credentials are stored locally for this demo. Connect a backend to enable real password changes.
+            Password changes from this screen aren&apos;t wired up yet. To rotate the admin password, update
+            <span className="text-white/45"> ADMIN_PASSWORD</span> and re-run
+            <span className="text-white/45"> npm run db:setup</span>.
           </p>
           <div className="space-y-4">
             {[

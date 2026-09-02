@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Users, Package, MessageCircle, Star, ArrowUpRight, Eye } from "lucide-react"
+import { Users, Package, MessageCircle, CreditCard, ArrowUpRight, Eye } from "lucide-react"
 import { getLeads, type Lead } from "@/lib/leads-store"
-import { getProducts, type Product } from "@/lib/products-store"
+import { getPayments, type Payment } from "@/lib/payments-store"
 import { getSessions, type ChatSession } from "@/lib/chat-store"
-import { timeAgo } from "@/lib/utils"
+import { apiGet } from "@/lib/api"
+import { timeAgo, formatPrice } from "@/lib/utils"
 
 const statusColor: Record<string, string> = {
   new: "bg-emerald-500/15 text-emerald-400",
@@ -15,31 +16,69 @@ const statusColor: Record<string, string> = {
   closed: "bg-white/8 text-white/40",
 }
 
+const paymentColor: Record<string, string> = {
+  pending: "bg-yellow-500/15 text-yellow-400",
+  received: "bg-emerald-500/15 text-emerald-400",
+  refunded: "bg-white/8 text-white/40",
+}
+
+interface Stats {
+  leads: { total: number; new: number }
+  products: { total: number; featured: number }
+  chats: { total: number; unread: number }
+  payments: { total: number; pending: number; revenueReceived: number; revenuePending: number }
+}
+
 export default function AdminDashboard() {
   const [leads, setLeads] = useState<Lead[]>([])
-  const [products, setProducts] = useState<Product[]>([])
+  const [payments, setPayments] = useState<Payment[]>([])
   const [sessions, setSessions] = useState<ChatSession[]>([])
+  const [stats, setStats] = useState<Stats | null>(null)
 
   useEffect(() => {
     const load = () => {
-      setLeads(getLeads())
-      setProducts(getProducts())
-      setSessions(getSessions())
+      apiGet<Stats>("/api/admin/stats").then(setStats).catch(() => {})
+      getLeads().then(setLeads).catch(() => {})
+      getPayments().then(setPayments).catch(() => {})
+      getSessions().then(setSessions).catch(() => {})
     }
     load()
-    const t = setInterval(load, 2500)
+    const t = setInterval(load, 5000)
     return () => clearInterval(t)
   }, [])
 
-  const unread = sessions.filter((s) => !s.read).length
-  const newLeads = leads.filter((l) => l.status === "new").length
-
   const kpis = [
-    { label: "Consultation Requests", value: leads.length, icon: Users, delta: `${newLeads} new` },
-    { label: "Products Published", value: products.length, icon: Package, delta: `${products.filter((p) => p.featured).length} featured` },
-    { label: "Live Chats", value: sessions.length, icon: MessageCircle, delta: `${unread} unread` },
-    { label: "Featured Packages", value: products.filter((p) => p.featured).length, icon: Star, delta: "on homepage / shop" },
+    {
+      label: "Consultation Requests",
+      value: stats?.leads.total ?? leads.length,
+      icon: Users,
+      delta: `${stats?.leads.new ?? 0} new`,
+      href: "/admin/leads",
+    },
+    {
+      label: "Payments Recorded",
+      value: stats?.payments.total ?? payments.length,
+      icon: CreditCard,
+      delta: `${formatPrice(stats?.payments.revenueReceived ?? 0)} received`,
+      href: "/admin/payments",
+    },
+    {
+      label: "Live Chats",
+      value: stats?.chats.total ?? sessions.length,
+      icon: MessageCircle,
+      delta: `${stats?.chats.unread ?? 0} unread`,
+      href: "/admin/messages",
+    },
+    {
+      label: "Products Published",
+      value: stats?.products.total ?? 0,
+      icon: Package,
+      delta: `${stats?.products.featured ?? 0} featured`,
+      href: "/admin/products",
+    },
   ]
+
+  const pendingRevenue = stats?.payments.revenuePending ?? 0
 
   return (
     <div className="p-6 lg:p-10 min-h-screen">
@@ -49,16 +88,71 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        {kpis.map(({ label, value, icon: Icon, delta }) => (
-          <div key={label} className="admin-card p-6">
+        {kpis.map(({ label, value, icon: Icon, delta, href }) => (
+          <Link key={label} href={href} className="admin-card p-6 hover:bg-white/[0.02] transition-colors">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: "rgba(194,161,91,0.2)" }}>
               <Icon className="h-4 w-4" style={{ color: "var(--primary)" }} />
             </div>
             <div className="font-display text-3xl font-semibold text-white mb-1">{value}</div>
             <div className="text-xs font-semibold text-white/50 mb-1">{label}</div>
             <div className="text-[10px] text-white/25">{delta}</div>
-          </div>
+          </Link>
         ))}
+      </div>
+
+      {/* Payments */}
+      <div className="admin-card overflow-hidden mb-6">
+        <div className="flex items-center justify-between p-6" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="flex items-center gap-2">
+            <h2 className="font-display text-sm font-semibold text-white">Recent Payments</h2>
+            {pendingRevenue > 0 && (
+              <span className="text-[10px] font-bold bg-yellow-500/20 text-yellow-400 rounded-full px-2 py-0.5">
+                {formatPrice(pendingRevenue)} pending
+              </span>
+            )}
+          </div>
+          <Link href="/admin/payments" className="text-xs font-semibold flex items-center gap-1 hover:opacity-80 transition" style={{ color: "var(--primary)" }}>
+            View all <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                {["From", "Amount", "Method", "Status", "Received"].map((h) => (
+                  <th key={h} className="px-6 py-3 text-left text-[10px] uppercase tracking-widest text-white/25 font-bold">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {payments.slice(0, 6).map((p) => (
+                <tr key={p.id} className="admin-row-hover transition-colors" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                  <td className="px-6 py-4">
+                    <p className="text-sm font-semibold text-white/85">{p.name}</p>
+                    <p className="text-[11px] text-white/30">{p.email}</p>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-white/80 font-mono">{formatPrice(p.amount)}</td>
+                  <td className="px-6 py-4 text-xs text-white/45 capitalize">{p.method.replace("_", " ")}</td>
+                  <td className="px-6 py-4">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${paymentColor[p.status]}`}>
+                      {p.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-xs text-white/30">{timeAgo(p.createdAt)}</td>
+                </tr>
+              ))}
+              {payments.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-white/25 text-sm">
+                    No payments recorded yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Consultation requests table */}
@@ -113,8 +207,8 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between p-6" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
           <div className="flex items-center gap-2">
             <h2 className="font-display text-sm font-semibold text-white">Live Chat Sessions</h2>
-            {unread > 0 && (
-              <span className="text-[10px] font-bold bg-emerald-500 text-white rounded-full px-2 py-0.5">{unread} new</span>
+            {(stats?.chats.unread ?? 0) > 0 && (
+              <span className="text-[10px] font-bold bg-emerald-500 text-white rounded-full px-2 py-0.5">{stats?.chats.unread} new</span>
             )}
           </div>
           <Link href="/admin/messages" className="text-xs font-semibold flex items-center gap-1 hover:opacity-80 transition" style={{ color: "var(--primary)" }}>

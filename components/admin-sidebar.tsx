@@ -3,14 +3,15 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LayoutDashboard, Users, Package, MessageCircle, Settings, LogOut, Menu, X, ExternalLink } from "lucide-react"
+import { LayoutDashboard, Users, Package, MessageCircle, Settings, LogOut, Menu, X, ExternalLink, CreditCard } from "lucide-react"
 import { LogoMark } from "@/components/logo"
 import { logout } from "@/lib/auth"
-import { unreadCount } from "@/lib/chat-store"
+import { apiGet } from "@/lib/api"
 
 const navItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/admin/leads", icon: Users, label: "Consultations" },
+  { href: "/admin/payments", icon: CreditCard, label: "Payments" },
   { href: "/admin/products", icon: Package, label: "Products" },
   { href: "/admin/messages", icon: MessageCircle, label: "Live Chat", badge: true },
   { href: "/admin/settings", icon: Settings, label: "Settings" },
@@ -23,15 +24,26 @@ export function AdminSidebar() {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    const tick = () => setUnread(unreadCount())
+    let active = true
+    const tick = async () => {
+      try {
+        const s = await apiGet<{ chats: { unread: number } }>("/api/admin/stats")
+        if (active) setUnread(s.chats.unread)
+      } catch {
+        /* ignore */
+      }
+    }
     tick()
-    const t = setInterval(tick, 2000)
-    return () => clearInterval(t)
+    const t = setInterval(tick, 5000)
+    return () => {
+      active = false
+      clearInterval(t)
+    }
   }, [])
 
-  const doLogout = () => {
-    logout()
-    router.push("/admin/login")
+  const doLogout = async () => {
+    await logout()
+    router.replace("/admin/login")
   }
 
   const isActive = (href: string) => (href === "/admin" ? pathname === "/admin" : pathname.startsWith(href))

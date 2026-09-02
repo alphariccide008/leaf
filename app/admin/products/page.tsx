@@ -3,16 +3,25 @@
 import { useEffect, useRef, useState } from "react"
 import { Plus, Pencil, Trash2, X, Check, Search, Upload, Star } from "lucide-react"
 import {
-  getProducts,
+  getProductsAdmin,
   addProduct,
   updateProduct,
   deleteProduct,
   PRODUCT_CATEGORIES,
   type Product,
+  type ProductDraft as Draft,
 } from "@/lib/products-store"
 import { formatPrice } from "@/lib/utils"
 
-type Draft = Omit<Product, "id" | "createdAt">
+const toDraft = (p: Product): Draft => ({
+  name: p.name,
+  category: p.category,
+  price: p.price,
+  description: p.description,
+  image: p.image,
+  featured: p.featured,
+  inStock: p.inStock,
+})
 
 const EMPTY: Draft = {
   name: "",
@@ -46,7 +55,9 @@ export default function AdminProducts() {
   const [saving, setSaving] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const reload = () => setProducts(getProducts())
+  const reload = () => {
+    getProductsAdmin().then(setProducts).catch(() => {})
+  }
 
   useEffect(() => {
     reload()
@@ -54,7 +65,7 @@ export default function AdminProducts() {
 
   const openAdd = () => setModal({ mode: "add", data: { ...EMPTY } })
   const openEdit = (p: Product) =>
-    setModal({ mode: "edit", id: p.id, data: { ...p } })
+    setModal({ mode: "edit", id: p.id, data: toDraft(p) })
 
   const patch = (key: keyof Draft, val: unknown) => {
     if (!modal) return
@@ -74,31 +85,34 @@ export default function AdminProducts() {
 
   const valid = (d: Draft) => d.name.trim() && d.description.trim() && d.image.trim()
 
-  const save = () => {
+  const save = async () => {
     if (!modal || !valid(modal.data)) return
     setSaving(true)
-    setTimeout(() => {
+    try {
       if (modal.mode === "add") {
-        addProduct(modal.data)
+        await addProduct(modal.data)
       } else if (modal.id != null) {
-        const existing = getProducts().find((p) => p.id === modal.id)
-        if (existing) updateProduct({ ...existing, ...modal.data })
+        await updateProduct(modal.id, modal.data)
       }
       reload()
       setModal(null)
+    } finally {
       setSaving(false)
-    }, 350)
+    }
   }
 
-  const remove = () => {
+  const remove = async () => {
     if (!delTarget) return
-    deleteProduct(delTarget.id)
-    reload()
+    const id = delTarget.id
     setDelTarget(null)
+    setProducts((prev) => prev.filter((p) => p.id !== id))
+    await deleteProduct(id)
+    reload()
   }
 
-  const toggleFeatured = (p: Product) => {
-    updateProduct({ ...p, featured: !p.featured })
+  const toggleFeatured = async (p: Product) => {
+    setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, featured: !x.featured } : x)))
+    await updateProduct(p.id, { ...toDraft(p), featured: !p.featured })
     reload()
   }
 

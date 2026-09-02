@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowRight, Check, Mail, MapPin, Clock } from "lucide-react"
-import { addLead, LEAD_SERVICES } from "@/lib/leads-store"
+import { ArrowRight, Check, Mail, MapPin, Clock, Phone } from "lucide-react"
+import { submitLead, LEAD_SERVICES } from "@/lib/leads-store"
 
 const inputStyle: React.CSSProperties = {
   background: "rgba(255,255,255,0.05)",
@@ -10,23 +10,54 @@ const inputStyle: React.CSSProperties = {
   color: "#ECEAE3",
 }
 
+const PAYMENT_METHODS = [
+  { value: "bank_transfer", label: "Bank transfer" },
+  { value: "card", label: "Card" },
+  { value: "cash", label: "Cash" },
+  { value: "other", label: "Other" },
+]
+
 export function ContactForm() {
-  const [form, setForm] = useState({ name: "", email: "", phone: "", service: LEAD_SERVICES[0], message: "" })
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    service: LEAD_SERVICES[0] as string,
+    message: "",
+    amount: "",
+    paymentMethod: "bank_transfer",
+    paymentReference: "",
+  })
+  const [sendPayment, setSendPayment] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState("")
 
   const update = (key: keyof typeof form, val: string) => setForm((p) => ({ ...p, [key]: val }))
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim() || !form.email.trim()) return
-    addLead({
-      name: form.name.trim(),
-      email: form.email.trim(),
-      phone: form.phone.trim(),
-      service: form.service,
-      message: form.message.trim(),
-    })
-    setSubmitted(true)
+    setError("")
+    setSubmitting(true)
+    try {
+      const amount = sendPayment ? Number(form.amount) : 0
+      await submitLead({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        service: form.service,
+        message: form.message.trim(),
+        amount: amount > 0 ? amount : undefined,
+        paymentMethod: sendPayment ? form.paymentMethod : undefined,
+        paymentReference: sendPayment ? form.paymentReference.trim() : undefined,
+      })
+      setSubmitted(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -52,6 +83,7 @@ export function ContactForm() {
             <div className="space-y-5">
               {[
                 { Icon: Mail, label: "hello@oakleafpartners.com" },
+                { Icon: Phone, label: "+1 (469) 879-9826" },
                 { Icon: MapPin, label: "Remote & in-person — by appointment" },
                 { Icon: Clock, label: "Response within 24 hours" },
               ].map(({ Icon, label }) => (
@@ -82,7 +114,10 @@ export function ContactForm() {
                   </div>
                   <h3 className="font-display text-2xl font-semibold mb-3 text-white">Request received</h3>
                   <p className="text-sm leading-relaxed max-w-xs mx-auto" style={{ color: "var(--text-3)" }}>
-                    Thank you, {form.name.split(" ")[0]}. A consultant will reach you within 24 hours.
+                    Thank you, {form.name.split(" ")[0]}. A consultant will reach you within 24 hours
+                    {sendPayment && Number(form.amount) > 0
+                      ? ". We'll confirm your payment once it clears."
+                      : "."}
                   </p>
                 </div>
               </div>
@@ -133,17 +168,74 @@ export function ContactForm() {
                   placeholder="Tell us about your needs, preferences, and goals."
                   value={form.message}
                   onChange={(e) => update("message", e.target.value)}
-                  rows={6}
+                  rows={5}
                   className="w-full px-5 py-3.5 rounded-lg text-sm outline-none resize-none transition-colors placeholder:text-white/30"
                   style={inputStyle}
                 />
 
+                <div className="rounded-lg p-4" style={{ border: "1px solid rgba(255,255,255,0.09)", background: "rgba(255,255,255,0.03)" }}>
+                  <label className="flex items-center gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={sendPayment}
+                      onChange={(e) => setSendPayment(e.target.checked)}
+                      className="h-4 w-4 accent-[var(--primary)]"
+                    />
+                    <span className="text-sm text-white/80">I&apos;m sending a payment / deposit with this request</span>
+                  </label>
+
+                  {sendPayment && (
+                    <div className="mt-4 space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          placeholder="Amount (USD)"
+                          value={form.amount}
+                          onChange={(e) => update("amount", e.target.value)}
+                          className="w-full px-4 py-3 rounded-lg text-sm outline-none placeholder:text-white/30"
+                          style={inputStyle}
+                        />
+                        <select
+                          value={form.paymentMethod}
+                          onChange={(e) => update("paymentMethod", e.target.value)}
+                          className="w-full px-4 py-3 rounded-lg text-sm outline-none"
+                          style={{ ...inputStyle, background: "#141A16" }}
+                        >
+                          {PAYMENT_METHODS.map((m) => (
+                            <option key={m.value} value={m.value}>
+                              {m.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <input
+                        placeholder="Payment reference / transfer note (optional)"
+                        value={form.paymentReference}
+                        onChange={(e) => update("paymentReference", e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg text-sm outline-none placeholder:text-white/30"
+                        style={inputStyle}
+                      />
+                      <p className="text-[10px] leading-relaxed" style={{ color: "var(--text-4)" }}>
+                        This records the amount against your request so our team can reconcile it. No card is charged here —
+                        a consultant will confirm payment details with you.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {error && (
+                  <p className="text-xs text-red-400 bg-red-500/10 px-3 py-2 rounded-lg border border-red-500/20">{error}</p>
+                )}
+
                 <button
                   type="submit"
-                  className="group flex items-center gap-3 px-8 py-4 text-[10px] font-bold uppercase tracking-[0.18em] rounded-lg hover:opacity-90 transition-all"
+                  disabled={submitting}
+                  className="group flex items-center gap-3 px-8 py-4 text-[10px] font-bold uppercase tracking-[0.18em] rounded-lg hover:opacity-90 transition-all disabled:opacity-60"
                   style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
                 >
-                  Submit Request
+                  {submitting ? "Sending..." : "Submit Request"}
                   <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
 

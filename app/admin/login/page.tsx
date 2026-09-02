@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff } from "lucide-react"
 import { LogoMark } from "@/components/logo"
-import { verifyCredentials, login } from "@/lib/auth"
+import { login } from "@/lib/auth"
 
 export default function AdminLogin() {
   const [username, setUsername] = useState("")
@@ -18,13 +18,12 @@ export default function AdminLogin() {
     e.preventDefault()
     setError("")
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 700))
 
-    if (verifyCredentials(username, password)) {
-      login()
-      router.push("/admin")
+    const res = await login(username.trim(), password)
+    if (res.ok) {
+      router.replace("/admin")
     } else {
-      setError("Invalid credentials. Please try again.")
+      setError(res.error ?? "Invalid credentials. Please try again.")
       setLoading(false)
     }
   }
@@ -107,8 +106,7 @@ export default function AdminLogin() {
           </form>
 
           <p className="text-[10px] text-white/25 mt-6 text-center">
-            Demo access — username <span className="text-white/45">admin</span> · password{" "}
-            <span className="text-white/45">oakleaf@2026</span>
+            Authorised OAKLEAF personnel only.
           </p>
         </div>
       </div>
