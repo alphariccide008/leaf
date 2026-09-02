@@ -58,7 +58,7 @@ export const TEAM: TeamMember[] = [
     bio: "Supports engineering project planning and advisory work, keeping scope, risk, and delivery aligned.",
   },
   {
-    name: "James Gunderson",
+    name: "James Fregeau",
     role: "Engineering Consultant",
     discipline: "Engineering",
     image: "/engineer.jpeg",
