@@ -7,7 +7,7 @@ export default function AdminSettings() {
   const [saved, setSaved] = useState(false)
   const [form, setForm] = useState({
     displayName: "OAKLEAF Admin",
-    email: "admin@oakleafpartners.com",
+    email: "info@oakleafpartnersconsulting.com",
     currentPw: "",
     newPw: "",
     confirmPw: "",

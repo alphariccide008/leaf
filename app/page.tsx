@@ -14,7 +14,7 @@ const orgJsonLd = {
   name: "OAKLEAF PARTNERS LLC",
   description:
     "A diversified consulting and design company offering wardrobe & fashion consulting, clothing design, and engineering consulting.",
-  url: "https://oakleafpartners.com",
+  url: "https://oakleafpartnersconsulting.com",
   email: "info@oakleafpartnersconsulting.com",
   founder: { "@type": "Person", name: "Cindy Kahn", jobTitle: "Chief Executive Officer" },
   areaServed: "Worldwide",

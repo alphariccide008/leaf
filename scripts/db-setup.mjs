@@ -39,7 +39,7 @@ async function run() {
     const hash = await bcrypt.hash(password, 12)
     await client.query(
       `insert into admin_users (username, password_hash, display_name, email)
-       values ($1, $2, 'OAKLEAF Admin', 'admin@oakleafpartners.com')
+       values ($1, $2, 'OAKLEAF Admin', 'info@oakleafpartnersconsulting.com')
        on conflict (username) do update set password_hash = excluded.password_hash`,
       [username, hash],
     )

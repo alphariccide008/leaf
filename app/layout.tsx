@@ -3,7 +3,7 @@ import "./globals.css"
 import { Preloader } from "@/components/preloader"
 import { ChatWidget } from "@/components/chat-widget"
 
-const SITE_URL = "https://oakleafpartners.com"
+const SITE_URL = "https://oakleafpartnersconsulting.com"
 const DESCRIPTION =
   "OAKLEAF PARTNERS LLC is a diversified consulting and design company offering professional services in wardrobe & fashion consulting, clothing design, and engineering consulting."
 
