@@ -82,7 +82,7 @@ export function ContactForm() {
 
             <div className="space-y-5">
               {[
-                { Icon: Mail, label: "hello@oakleafpartners.com" },
+                { Icon: Mail, label: "info@oakleafpartnersconsulting.com" },
                 { Icon: Phone, label: "+1 (469) 879-9826" },
                 { Icon: Phone, label: "+1 (405) 213-7499" },
                 { Icon: MapPin, label: "Remote & in-person — by appointment" },

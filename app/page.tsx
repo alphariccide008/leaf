@@ -15,7 +15,7 @@ const orgJsonLd = {
   description:
     "A diversified consulting and design company offering wardrobe & fashion consulting, clothing design, and engineering consulting.",
   url: "https://oakleafpartners.com",
-  email: "hello@oakleafpartners.com",
+  email: "info@oakleafpartnersconsulting.com",
   founder: { "@type": "Person", name: "Cindy Kahn", jobTitle: "Chief Executive Officer" },
   areaServed: "Worldwide",
   knowsAbout: [

@@ -69,7 +69,7 @@ export function Footer() {
             <div className="space-y-3.5">
               <div className="flex items-center gap-3">
                 <Mail className="h-3.5 w-3.5 flex-shrink-0" style={{ color: "var(--primary)" }} />
-                <span className="text-xs" style={{ color: "var(--text-3)" }}>hello@oakleafpartners.com</span>
+                <span className="text-xs" style={{ color: "var(--text-3)" }}>info@oakleafpartnersconsulting.com</span>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="h-3.5 w-3.5 flex-shrink-0" style={{ color: "var(--primary)" }} />
